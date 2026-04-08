@@ -1,4 +1,14 @@
-﻿# CodeReview-ENV
+﻿---
+title: CodeReview ENV
+emoji: "\ud83e\udde0"
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
+# CodeReview-ENV
 
 An OpenENV environment that trains AI agents to review code like a
 senior engineer. The agent reads pull request diffs and learns to
