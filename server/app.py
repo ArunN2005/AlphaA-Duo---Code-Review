@@ -201,6 +201,18 @@ def _replace_legacy_route(path: str, method: str) -> None:
     ]
 
 
+def _replace_legacy_route_prefix(path_prefix: str, method: str) -> None:
+    method = method.upper()
+    app.router.routes = [
+        r
+        for r in app.router.routes
+        if not (
+            str(getattr(r, "path", "")).startswith(path_prefix)
+            and method in (getattr(r, "methods", set()) or set())
+        )
+    ]
+
+
 def _review_snippet(code: str) -> list[dict]:
     findings: list[dict] = []
     lines = code.splitlines()
@@ -399,6 +411,8 @@ def rl_step(payload: WebStepRequest) -> dict:
 
 _replace_legacy_route("/reset", "POST")
 _replace_legacy_route("/step", "POST")
+_replace_legacy_route_prefix("/web", "GET")
+_replace_legacy_route_prefix("/web", "POST")
 _replace_legacy_route("/web", "GET")
 _replace_legacy_route("/web/cve", "GET")
 _replace_legacy_route("/web/reset", "POST")
