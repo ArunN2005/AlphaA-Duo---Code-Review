@@ -399,6 +399,8 @@ def rl_step(payload: WebStepRequest) -> dict:
 
 _replace_legacy_route("/reset", "POST")
 _replace_legacy_route("/step", "POST")
+_replace_legacy_route("/web/reset", "POST")
+_replace_legacy_route("/web/step", "POST")
 
 
 @app.post("/reset")
@@ -428,6 +430,16 @@ def legacy_step(payload: LegacyStepRequest) -> dict:
         "reward": reward,
         "done": done,
     }
+
+
+@app.post("/web/reset")
+def web_reset(payload: dict = Body(default={})) -> dict:
+    return legacy_reset(payload)
+
+
+@app.post("/web/step")
+def web_step(payload: LegacyStepRequest) -> dict:
+    return legacy_step(payload)
 
 
 @app.get("/cve-cases")
