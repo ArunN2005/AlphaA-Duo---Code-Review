@@ -75,8 +75,39 @@ class HTTPCodeReviewEnvironment(Environment):
     def __init__(self):
         self._env = CodeReviewEnvironment()
 
+    def _coerce_observation(self, raw_obs):
+        """Normalize environment outputs to a full observation shape.
+
+        Some OpenENV versions can surface state-like objects during reset.
+        This adapter converts those into the expected observation fields.
+        """
+        if hasattr(raw_obs, "diff") and hasattr(raw_obs, "episode_id"):
+            return raw_obs
+
+        if hasattr(raw_obs, "current_pr_index"):
+            idx = int(getattr(raw_obs, "current_pr_index"))
+            pr = self._env.prs[idx]
+            return ReviewObservation(
+                diff=pr["diff"],
+                filename=pr["filename"],
+                episode_id=pr["id"],
+                file_context=getattr(self._env, "current_file_context", ""),
+                repo_summary=getattr(self._env, "current_repo_summary", ""),
+                total_bugs=len(getattr(self._env, "current_bugs", [])),
+                remaining_bugs=len(getattr(self._env, "current_bugs", []))
+                - len(getattr(self._env, "found_bug_indices", set())),
+                is_clean=len(getattr(self._env, "current_bugs", [])) == 0,
+                bug_categories=sorted(
+                    {b.get("category", "logic_bug") for b in getattr(self._env, "current_bugs", [])}
+                )
+                if getattr(self._env, "current_bugs", [])
+                else ["clean"],
+            )
+
+        raise TypeError(f"Unsupported observation type returned by environment: {type(raw_obs)!r}")
+
     def reset(self, **kwargs):
-        obs = self._env.reset(**kwargs)
+        obs = self._coerce_observation(self._env.reset(**kwargs))
         return APIReviewObservation(
             diff=obs.diff,
             filename=obs.filename,
@@ -93,6 +124,7 @@ class HTTPCodeReviewEnvironment(Environment):
 
     def step(self, action: ReviewAction, **kwargs):
         obs, reward, done, info = self._env.step(action)
+        obs = self._coerce_observation(obs)
         return APIReviewObservation(
             diff=obs.diff,
             filename=obs.filename,
