@@ -399,6 +399,8 @@ def rl_step(payload: WebStepRequest) -> dict:
 
 _replace_legacy_route("/reset", "POST")
 _replace_legacy_route("/step", "POST")
+_replace_legacy_route("/web", "GET")
+_replace_legacy_route("/web/cve", "GET")
 _replace_legacy_route("/web/reset", "POST")
 _replace_legacy_route("/web/step", "POST")
 
