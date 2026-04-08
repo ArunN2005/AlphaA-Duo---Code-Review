@@ -235,25 +235,31 @@ class CodeReviewEnvironment(Environment):
                 line_distance = abs(int(action.line_number) - int(best_bug["line"]))
                 expected_category = str(best_bug["category"])
                 expected_severity = str(best_bug["severity"])
+                is_close_match = line_distance <= 2
 
                 if int(action.line_number) == int(best_bug["line"]):
                     reward += 1.0
                     if expected_severity == "critical":
                         reward += 0.5
                     self.found_bug_indices.add(matched_idx)
-                elif line_distance <= 2:
+                elif is_close_match:
                     reward += 0.4
+                else:
+                    # Far misses should not get neutral line credit in final scoring.
+                    reward -= 0.3
 
-                if str(action.severity) == expected_severity:
+                # Tighten final scoring: quality signals only count when localization is correct/near.
+                if is_close_match and str(action.severity) == expected_severity:
                     reward += 0.5
 
-                fix_keywords = self._keyword_set(str(best_bug["correct_fix"]))
-                action_keywords = self._keyword_set(str(action.suggested_fix))
-                overlap = len(fix_keywords.intersection(action_keywords))
-                if overlap >= 3:
-                    reward += 0.3
-                elif overlap >= 1:
-                    reward += 0.1
+                if is_close_match:
+                    fix_keywords = self._keyword_set(str(best_bug["correct_fix"]))
+                    action_keywords = self._keyword_set(str(action.suggested_fix))
+                    overlap = len(fix_keywords.intersection(action_keywords))
+                    if overlap >= 3:
+                        reward += 0.3
+                    elif overlap >= 1:
+                        reward += 0.1
 
             if int(action.line_number) == 0:
                 reward -= 0.5
